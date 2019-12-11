@@ -1,0 +1,67 @@
+library("openPrimeRui")
+writeXStringSet(subseq(aln, start=300, end=6300),  '4_seq_after_MSA.fa')
+seq.df <- read_templates("4_seq_after_MSA.fa")
+
+seq.df$Header[1]
+# Show the loaded metadata for the first template
+c(seq.df$Accession[1], seq.df$Group[1], seq.df$Species[1], seq.df$Function[1])
+# Show the ID (group) of the first template
+seq.df$ID[1]
+# Show the binding region of the first template for forward primers
+seq.df$Allowed_fw[1]
+# Show the corresponding interval in the templates
+c(seq.df$Allowed_Start_fw[1], seq.df$Allowed_End_fw[1])
+# Show the binding region of the first template for reverse primers
+seq.df$Allowed_rev[1]
+# Show the corresponding interval in the templates
+c(seq.df$Allowed_Start_rev[1], seq.df$Allowed_End_rev[1])
+
+template.df.uni <- assign_binding_regions(seq.df, fw = c(1,100), rev = c(1,100))
+
+# Show the new forward binding region (first 50 bases)
+#template.df.uni$Allowed_fw[1]
+# Show the new reverse binding region (last 40 bases)
+#template.df.uni$Allowed_rev[1]
+
+list.files(system.file("extdata", "settings", package = "openPrimeR"), pattern = "*\\.xml")
+settings.xml <- system.file("extdata", "settings", 
+                            "C_Taq_PCR_high_stringency.xml", package = "openPrimeR")
+settings <- read_settings(settings.xml)
+# No constraints on primer coverage (not recommended!)
+cvg_constraints(settings) <- list(90)
+# Instead consider all primers binding with up to 3 mismatches to cover the corresponding templates
+conOptions(settings)$allowed_mismatches <- 5
+constraints(settings)[["primer_length"]] <- c("min" = 20, "max" = 30)
+
+?DesignSettings
+out.file <- tempfile("default.settings", fileext = ".xml")
+write_settings(settings, out.file)
+#design_primers
+optimal.primers <- design_primers(seq.df, mode.directionality = "both",
+                                  settings = settings)
+out.file <- file("primers_for_300-6300_region", fileext = ".fasta")
+write_primers(optimal.primers$opti, out.file)
+
+optimal.primers$all_results
+optimal.primers$opti
+optimal.primers$filtered$data
+write(optimal.primers$filtered$data)
+
+
+
+
+#save to FASTA
+out.file <- tempfile("my_primers", fileext = ".fasta")
+write_primers(optimal.primers$opti, out.file)
+#Analyzing primers
+# Define the FASTA primer file to load
+primer.location <- system.file("extdata", "IMGT_data", "primers", "IGHV", 
+                               "Ippolito2012.fasta", package = "openPrimeR")
+# Load the primers
+primer.df <- read_primers(primer.location, fw.id = "_fw")
+print(primer.df[, c("ID", "Forward")]) 
+# Allow off-target coverage
+conOptions(settings)$allowed_other_binding_ratio <- c("max" = 1.0)
+# Evaluate all constraints found in 'settings'
+constraint.df <- check_constraints(primer.df, template.df, 
+                                   settings, active.constraints = names(constraints(settings)))
