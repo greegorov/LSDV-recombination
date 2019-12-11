@@ -9,18 +9,26 @@ library(ape)
 
 list.files()
 #for (i in length(list.files(path = "./sequences"))) {s <- readBStringSet("i",  "fasta")}
-s1 <- readBStringSet("./sequences/sequence (1).fasta",  "fasta")
-s2 <- readBStringSet("./sequences/sequence (2).fasta",  "fasta")
-s3 <- readBStringSet("./sequences/sequence (3).fasta",  "fasta")
-s4 <- readBStringSet("./sequences/sequence.fasta",  "fasta")
+
+s4 <- readBStringSet("./sequences/sequence (8).fasta",  "fasta")
 s5 <- readBStringSet("./sequences/sequence (5).fasta",  "fasta")
-s6 <- readBStringSet("./sequences/sequence (6).fasta",  "fasta")
-s7 <- readBStringSet("./sequences/sequence (7).fasta",  "fasta")
+s6 <- readBStringSet("./sequences/sequence (4).fasta",  "fasta")
+s7 <- readBStringSet("./sequences/sequence.fasta",  "fasta")
 
 
-LSDV <- DNAStringSet(c(s1, s2, s3, s4, s5, s6, s7))
+LSDV <- DNAStringSet(c(s4, s5, s6, s7))
 aln <- AlignSeqs(LSDV)
-step <- seq(1, length(aln[[1]])-200, by = 50)
+#Write fasta file
+writeXStringSet(aln, '4_isolates.fa')
+
+
+#Inspect MSA
+library(msaR)
+
+# read some sequences from a multiple sequence alignment file and display
+msaR(aln)
+
+step <- seq(1, length(aln[[1]])-200, by = 20)
 seq_sim_names <- c()
 seq_sim <- c()
 seq_sim_all <- NULL
@@ -37,6 +45,7 @@ for (j in 2:length(aln)) {
   }
   seq_sim_all <- cbind(seq_sim_all, seq_sim)
 }
+write.table(seq_sim_all, file = "Sim_plot_data_4_strains.csv", sep = ",")
 
 #plot_ly
 col_names <- c("step", names(aln[-1]))
@@ -44,15 +53,33 @@ colnames(seq_sim_all) <-  col_names
 seq_sim_all <- as.data.frame(seq_sim_all)
 
 plot_ly(seq_sim_all, x = ~step, y = ~seq_sim_all[ , 2], name = col_names[2], type = 'scatter', mode = 'lines',
-        line = list(color = 'rgb(205, 12, 24)', width = 4)) %>%
-  add_trace(y = ~seq_sim_all[ , 3], name = col_names[3], line = list(color = 'rgb(22, 96, 167)', width = 4)) %>%
-  add_trace(y = ~seq_sim_all[ , 4], name = col_names[4], line = list(color = 'rgb(205, 12, 24)', width = 4, dash = 'dash')) %>%
-  add_trace(y = ~seq_sim_all[ , 5], name = col_names[5], line = list(color = 'rgb(22, 96, 167)', width = 4, dash = 'dash')) %>%
-  add_trace(y = ~seq_sim_all[ , 6], name = col_names[6], line = list(color = 'rgb(205, 12, 24)', width = 4, dash = 'dot')) %>%
-  add_trace(y = ~seq_sim_all[ , 7], name = col_names[7], line = list(color = 'rgb(22, 96, 167)', width = 4, dash = 'dot')) %>%
+        line = list(color = 'rgb(205, 12, 24)', width = 2)) %>%
+  add_trace(y = ~seq_sim_all[ , 3], name = col_names[3], line = list(color = 'rgb(22, 96, 167)', width = 2)) %>%
+  add_trace(y = ~seq_sim_all[ , 4], name = col_names[4], line = list(color = 'rgb(25, 12, 24)', width = 2))
   layout(title = "Sequence similarity of LSDV isolates",
          xaxis = list(title = "bp"),
          yaxis = list (title = ""),
          legend = list(x = 100, y = 100))
 
+
+
+
+
+
+#MELTING (http://www.ebi.ac.uk/biomodels/tools/melting/)
+#o ViennaRNA (http://www.tbi.univie.ac.at/RNA/)
+  dependency problems prevent configuration of viennarna:
+    viennarna depends on libgsl23 (>= 2.5); however:
+    Version of libgsl23:amd64 on system is 2.4+dfsg-6.
+  viennarna depends on libc6 (>= 2.29); however:
+    Version of libc6:amd64 on system is 2.27-3ubuntu1.
+  
+  dpkg: error processing package viennarna (--install):
+    dependency problems - leaving unconfigured
+  Processing triggers for man-db (2.8.3-2ubuntu0.1) ...
+  Errors were encountered while processing:
+    viennarna
+#o OligoArrayAux (http://unafold.rna.albany.edu/OligoArrayAux.php)
+#o MAFFT (http://mafft.cbrc.jp/alignment/software/)
+#o Pandoc (http://pandoc.org)
 
